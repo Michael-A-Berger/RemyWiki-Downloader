@@ -1,0 +1,23 @@
+{
+  "name": "remywiki_downloader",
+  "version": "1.0.0",
+  "description": "Web scraper for RemyWiki",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "pretest": "eslint ./ --fix"
+  },
+  "author": "Michael Berger",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.19.2",
+    "cheerio": "^1.0.0-rc.3",
+    "eslint": "^7.6.0",
+    "eslint-config-airbnb": "^18.2.0",
+    "fast-csv": "^4.3.1"
+  },
+  "devDependencies": {
+    "eslint-plugin-import": "^2.22.0"
+  }
+}
