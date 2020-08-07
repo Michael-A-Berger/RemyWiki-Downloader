@@ -14,6 +14,21 @@ const iidxArcadeChartTypes = [
   'dpdifficultyleggendaria',
 ];
 
+/* =====================================
+ * ===== PROPERTY CHECK EXCEPTIONS =====
+ * =====================================
+ */
+
+const compositionExceptions = [
+  'https://remywiki.com/REAL_LOVE',
+];
+
+const arrangementExceptions = [
+  'https://remywiki.com/REAL_LOVE',
+  'https://remywiki.com/FANTASY',
+  'https://remywiki.com/JIVE_INTO_THE_NIGHT',
+];
+
 /* ================================
  * ===== GENERIC TEST METHODS =====
  * ================================
@@ -41,6 +56,10 @@ function songTest(song) {
     console.log(`!!! - Song has no 'bpm' property! (${song.remywiki})`);
     passedTest = false;
   }
+  if (song.length === undefined) {
+    console.log(`!!! - Song has no 'length' property! (${song.remywiki})`);
+    passedTest = false;
+  }
   if (song.firstmusicgameappearance === undefined) {
     console.log(`!!! - Song has no 'firstmusicgameappearance' property! (${song.remywiki})`);
     passedTest = false;
@@ -58,6 +77,18 @@ function iidxSongTest(song) {
   // Error Checking - Basic IIDX Properties
   if (song.genre === undefined) {
     console.log(`!!! - Song has no 'genre' property! (${song.remywiki})`);
+    passedTest = false;
+  }
+  if (song.composition === undefined && compositionExceptions.indexOf(song.remywiki) === -1) {
+    console.log(`!!! - Song has no 'composition' property! (${song.remywiki})`);
+    passedTest = false;
+  }
+  if (song.arrangement === undefined && arrangementExceptions.indexOf(song.remywiki) === -1) {
+    console.log(`!!! - Song has no 'arrangement' property! (${song.remywiki})`);
+    passedTest = false;
+  }
+  if (song.vj === undefined) {
+    console.log(`!!! - Song has no 'vj' property! (${song.remywiki})`);
     passedTest = false;
   }
 
@@ -219,12 +250,40 @@ function iidxTest26Rootage(songList) {
   return noErrors;
 }
 
-/* ===========================
- * ===== THE TEST METHOD =====
- * ===========================
+/* =============================
+ * ===== SHORT TEST METHOD =====
+ * =============================
  */
 
-function test(songList, version) {
+function shortTest(songList, version) {
+  // Defining the booleans
+  let result = true;
+  let testHappened = false;
+
+  // IF the version is IIDX, do those tests
+  if (constants.IIDXArcadeVersions.indexOf(version) > -1) {
+    songList.forEach((song) => {
+      const test = iidxSongTest(song);
+      result = result && test;
+    });
+    testHappened = true;
+  }
+
+  // IF the test did not happen, complain about it
+  if (!testHappened) {
+    console.log(`=== ERROR ===\n\n- No short test method for [${version}]\n`);
+  }
+
+  // Returning the test result
+  return result;
+}
+
+/* ============================
+ * ===== FULL TEST METHOD =====
+ * ============================
+ */
+
+function fullGameTest(songList, version) {
   // Defining the booleans
   let result = true;
   let testHappened = false;
@@ -265,7 +324,7 @@ function test(songList, version) {
 
   // IF the test did not happen, say so
   if (!testHappened) {
-    console.log(`=== ERROR ===\n\n- No test method for [${version}]\n`);
+    console.log(`=== ERROR ===\n\n- No full game test method for [${version}]\n`);
   }
 
   // Returning the test result
@@ -274,5 +333,6 @@ function test(songList, version) {
 
 // Setting up the exports
 module.exports = {
-  Test: test,
+  ShortTest: shortTest,
+  FullGameTest: fullGameTest,
 };

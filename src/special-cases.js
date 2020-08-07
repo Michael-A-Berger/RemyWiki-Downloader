@@ -1,5 +1,6 @@
 // Getting the constants
 const constants = require('./constants.js');
+const parser = require('./parser');
 
 // Defining constant variables
 const noCommaInParenthesesRegex = /,\s*(?![^\[\(]*[\]\)])/g;
@@ -36,27 +37,9 @@ function parseIMPLANTATION(jqObj, version) {
   }
   const infoStrings = songInfo.text().split('\n');
   infoStrings.forEach((str) => {
-    const stringArray = str.split(/:\s+/g);
-    if (stringArray.length > 1) {
-      const propArray = stringArray[0].split('/');
-      const valArray = stringArray[1].split(noCommaInParenthesesRegex);
-      propArray.forEach((prop) => {
-        const propName = prop.replace(/\W/g, '').toLowerCase();
-        switch (propName) {
-          case 'artist':
-            song[propName] = valArray[0];
-            break;
-          default:
-            song[propName] = valArray;
-            break;
-        }
-        if (valArray.length === 1) {
-          song[propName] = valArray[0];
-        } else {
-          song[propName] = valArray;
-        }
-      });
-    }
+  const parsedInfo = parseSongInfo(songInfo, debug);
+  Object.keys(parsedInfo).forEach((prop) => {
+    song[prop] = parsedInfo[prop];
   });
 
   // Getting the other game apearances
@@ -72,6 +55,11 @@ function parseIMPLANTATION(jqObj, version) {
 
   // Returning the parsed IMPLANTATION song
   return song;
+}
+
+// parseTimepiecePhase2()
+function parseTimepiecePhase2(jqObj, version) {
+    
 }
 
 // processSpecialCase()

@@ -1,7 +1,6 @@
 // Packages
 const csv = require('fast-csv');
 
-
 // Modules
 const constants = require('./constants.js');
 
@@ -12,17 +11,31 @@ const constants = require('./constants.js');
 
 function iidxHeaders(flattenedList, debug) {
   // Gathering all of the unique properties from the flattened song list
-  let uniqueProps = [ 'remywiki' ];
+  const uniqueProps = ['remywiki'];
   flattenedList.forEach((song) => {
-    let newProps = Object.keys(song).filter((p) => !uniqueProps.includes(p));
+    const newProps = Object.keys(song).filter((p) => !uniqueProps.includes(p));
     newProps.forEach((p) => uniqueProps.push(p));
     if (debug) console.log('song processed');
   });
-  
+
   // Debug Print
   if (debug) {
     console.log('- uniqeProps:');
-    console.dir(uniqueProps);
+    for (let num = 0; num < uniqueProps.length; num++) {
+      let numString = num.toString();
+      switch (numString.length) {
+        case 1:
+          numString = `00${numString}`;
+          break;
+        case 2:
+          numString = `0${numString}`;
+          break;
+        default:
+          // Do nothing
+          break;
+      }
+      console.log(`\t${numString} - ${uniqueProps[num]}`);
+    }
   }
 }
 
@@ -68,7 +81,7 @@ function songsToShallowArray(songList, debug = false) {
       console.log(`\n- Song (${song.remywiki}) flattened:`);
       console.dir(flatSong);
     }
-    
+
     // Adding the flat song to the shallow array
     shallowArray.push(flatSong);
   });
@@ -80,14 +93,14 @@ function songsToShallowArray(songList, debug = false) {
 // printCSV()
 function printCSV(songList, version, debug = false) {
   // Flattening the JSON objects
-  let songsForPrint = songsToShallowArray(songList, debug);
-  
+  const songsForPrint = songsToShallowArray(songList, debug);
+
   // Getting the appropriate headers
   let headers = [];
   if (constants.IIDXArcadeVersions.indexOf(version) > -1) {
     headers = iidxHeaders(songsForPrint, debug);
   }
-  
+
   // Throwing out an error if the headers have not been defined
   if (headers === undefined || headers.length < 1) {
     console.log(`ERROR IN PRINTING - Headers not defined! (Version: ${version})`);
