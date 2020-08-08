@@ -1,17 +1,12 @@
-// Getting the NPM modules
-const cheerio = require('cheerio');
-const axios = require('axios');
-
 // Getting other downloader modules
 const constants = require('./constants.js');
-const specialCases = require('./special-cases.js');
 
 // Const Variables
 const songs = [];
 const noCommaInParenthesesRegex = /,\s*(?![^\[\(]*[\]\)])/g;
 
-// printChartTable()
-function printChartTable(table) {
+// printTableArray()
+function printTableArray(table) {
   const printElementLength = 6;
   let str = '';
   for (let row = 0; row < table.length; row++) {
@@ -29,8 +24,8 @@ function printChartTable(table) {
   }
 }
 
-// chartTableToArray()
-function chartTableToArray(tableObj) {
+// tableToArray()
+function tableToArray(tableObj) {
   // Getting the table rows
   const tableRows = tableObj.find('tr');
 
@@ -81,10 +76,9 @@ function getTableRowPastIndex(chartTable, gameVersions, currentVersion, debug = 
   // Defining the past index variable
   let pastIndex = -1;
 
-  // Doing a preliminary "First Mix+" and "Last Mix" check
-  for (let num = 0; num < chartTable.length - 1; num++) {
-    if (chartTable[num][0].startsWith(`${currentVersion}→`)
-       || chartTable[num][0].endsWith(`→${currentVersion}`)) {
+  // Doing a preliminary "First Mix+" check
+  for (let num = 0; num < chartTable.length; num++) {
+    if (chartTable[num][0].startsWith(`${currentVersion}→`)) {
       pastIndex = num;
     }
   }
@@ -110,7 +104,7 @@ function getTableRowPastIndex(chartTable, gameVersions, currentVersion, debug = 
           num = -1;
         } else {
           // ELSE... (actually searching for later game mixes)
-          for (let num2 = versionIndex + 1; num2 < gameVersions.length; num2++) {
+          for (let num2 = loopIndex + 1; num2 < gameVersions.length; num2++) {
             // IF the hang text matches a newer version of the game...
             if (gameVersions[num2].indexOf(hangText) > -1) {
               // Debug Print
@@ -139,6 +133,50 @@ function getTableRowPastIndex(chartTable, gameVersions, currentVersion, debug = 
 
   // Returning the past index
   return pastIndex;
+}
+
+// parseChartTableRow()
+function parseChartTableRow(chartTable2D, rowIndex) {
+  // Defining the chart holder
+  const holder = {};
+
+  // Getting the column count
+  const colCount = chartTable2D[0].length;
+
+  // Calculating the chart stats names in advance
+  let chartStatNames = chartTable2D[2][0].replace(/\s*/g, '').split('/');
+  chartStatNames = chartStatNames.map((name) => name.toLowerCase());
+
+  // FOR each column past the first one...
+  for (let col = 1; col < colCount; col++) {
+    // IF the column in the row has a valid chart...
+    const chartRating = chartTable2D[rowIndex][col].replace(/[^\w/]/g, '');
+    if (chartRating.length > 0) {
+      // Getting the chart name + stats
+      const currentChart = {};
+      let chartName = chartTable2D[0][col].replace(/\s/g, '').toLowerCase();
+      chartName += chartTable2D[1][col].replace(/\s/g, '').toLowerCase();
+      let chartStats = chartTable2D[2][col].replace(/\s/g, '').toLowerCase();
+      chartStats = chartStats.split('/');
+      for (let n = 0; n < chartStats.length; n++) chartStats[n] = parseInt(chartStats[n], 10);
+
+      // Accounting for the mising note data
+      while (chartStats.length < chartStatNames.length) chartStats.push(0);
+
+      // Putting the chart data onto the current chart object
+      currentChart.rating = chartRating;
+      // currentChart.rating = parseInt(currentChart.rating, 10);
+      for (let n = 0; n < chartStatNames.length; n++) {
+        currentChart[chartStatNames[n]] = chartStats[n];
+      }
+
+      // Putting the individual chart on the charts object
+      holder[chartName] = currentChart;
+    }
+  }
+
+  // Returning the row values object
+  return holder;
 }
 
 // getCharts()
@@ -176,7 +214,8 @@ function getCharts(jqObj, version, debug = false) {
   // FOR each table found after the header...
   for (let chartNum = 0; indexToUse < 0 && chartNum < gameChartsTables.length; chartNum++) {
     // Defining the table 2D array
-    chartTable2D = chartTableToArray(gameChartsTables.eq(chartNum));
+    chartTable2D = tableToArray(gameChartsTables.eq(chartNum));
+    if (debug) printTableArray(chartTable2D);
 
     // Looking for an EXACT chart row match
     let exactIndex = -1;
@@ -202,40 +241,11 @@ function getCharts(jqObj, version, debug = false) {
 
   // Processing the chart row (if it exists)
   if (indexToUse > -1) {
-    // Getting the column count
-    const colCount = chartTable2D[0].length;
-
-    // Calculating the chart stats names in advance
-    let chartStatNames = chartTable2D[2][0].replace(/\s/g, '').split('/');
-    chartStatNames = chartStatNames.map((name) => name.toLowerCase());
-
-    // FOR each column past the first one...
-    for (let col = 1; col < colCount; col++) {
-      // IF the column in the row has a valid chart...
-      const chartRating = chartTable2D[indexToUse][col].replace(/[^\w/]/g, '');
-      if (chartRating.length > 0) {
-        // Getting the chart name + stats
-        const currentChart = {};
-        let chartName = chartTable2D[0][col].replace(/\s/g, '').toLowerCase();
-        chartName += chartTable2D[1][col].replace(/\s/g, '').toLowerCase();
-        let chartStats = chartTable2D[2][col].replace(/\s/g, '').toLowerCase();
-        chartStats = chartStats.split('/');
-        for (let n = 0; n < chartStats.length; n++) chartStats[n] = parseInt(chartStats[n], 10);
-
-        // Accounting for the mising note data
-        while (chartStats.length < chartStatNames.length) chartStats.push(0);
-
-        // Putting the chart data onto the current chart object
-        currentChart.rating = chartRating;
-        currentChart.rating = parseInt(currentChart.rating, 10);
-        for (let n = 0; n < chartStatNames.length; n++) {
-          currentChart[chartStatNames[n]] = chartStats[n];
-        }
-
-        // Putting the individual chart on the charts object
-        charts[chartName] = currentChart;
-      }
-    }
+    const chartHolder = parseChartTableRow(chartTable2D, indexToUse);
+    const chartKeys = Object.keys(chartHolder);
+    chartKeys.forEach((chartName) => {
+      charts[chartName] = chartHolder[chartName];
+    });
   }
 
   // Returning the charts array
@@ -243,7 +253,7 @@ function getCharts(jqObj, version, debug = false) {
 }
 
 // parseSongInfo()
-function parseSongInfo(pElement, debug) {
+function parseSongInfo(pElement, debug = false) {
   // Defining the song info object
   const songInfo = {};
 
@@ -273,101 +283,24 @@ function parseSongInfo(pElement, debug) {
     }
   });
 
+  if (debug) {
+    console.log('~~~~~~~~~~ SONG INFO ~~~~~~~~~~');
+    console.dir(songInfo);
+    console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
+  }
+
   // Returning the song info object
   return songInfo;
 }
 
-// getSong()
-async function getSong(url, version, debug = false) {
-  // Creating the song object
-  let song = {};
-  song.remywiki = url;
-
-  // Debug Print
-  if (debug) console.log(`- url:\t\t${url}\n- version:\t${version}\n`);
-
-  // Waiting for the response data
-  const response = await axios.get(url);
-
-  // Loading the Cheerio JQuery instance
-  const loaded = cheerio.load(response.data);
-
-  // IF the song URL is NOT a special case...
-  if (specialCases.SpecialCases.indexOf(url) === -1) {
-    // Getting the song's English name (according to RemyWiki)
-    const pageHeader = loaded('h1#firstHeading');
-    song.engname = pageHeader.text();
-
-    // Getting the song's (original) name
-    const nameHeader = loaded('div.mw-parser-output > h1');
-    song.name = nameHeader.text();
-
-    // Getting the general song info
-    let songInfo = loaded('#Song_Information').parent();
-    songInfo = songInfo.nextAll('p').eq(0);
-    const parsedInfo = parseSongInfo(songInfo, debug);
-    Object.keys(parsedInfo).forEach((prop) => {
-      song[prop] = parsedInfo[prop];
-    });
-
-    // Making sure the 'genre' property is filled in
-    if (song.genre === undefined) {
-      const genreKeys = Object.keys(song).filter((prop) => (prop.indexOf('genre') > -1));
-      let keyToUse = '';
-      if (constants.IIDXArcadeVersions.indexOf(version) > -1) {
-        keyToUse = genreKeys.filter((p) => p.indexOf('iidx'))[0];
-        song.genre = song[keyToUse];
-      }
-      if (song.genre === undefined) {
-        console.log(`ERROR IN PARSING: Song property 'genre' was not found in special cases! (${url})`);
-      }
-    }
-
-    // Getting the other game apearances
-    song.othermusicgameappearances = [];
-    const firstUL = loaded('div.mw-parser-output > ul').first();
-    const previousH2 = firstUL.prevAll('h2').first();
-    const insideSpan = previousH2.find('span').first();
-    if (insideSpan.attr('id') === 'Song_Information') {
-      song.othermusicgameappearances = firstUL.text().split('\n');
-    }
-  } else {
-    // ELSE process the special case
-    song = specialCases.ProcessSpecialCase(url, loaded, version);
-  }
-
-  // Debug Print
-  if (debug) {
-    console.log('\n~~~~~~~~~~ SONG BEFORE CHARTS ~~~~~~~~~~\n');
-    console.dir(song);
-    console.log('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
-  }
-
-  // Getting the chart ratings
-  song.charts = getCharts(loaded, version, debug);
-
-  // IF there are still no charts, spit out an error
-  if (song.charts.length === 0) {
-    console.log(`- ERROR in [${song.engName}], no charts found for game [${version}]`);
-  }
-
-  // (Debug Statement)
-  if (debug) console.dir(song);
-
-  // Adding the song to the big SONGS array
-  songs.push(song);
-
-  // Returning a promise (fulfilling 'await' conditions)
-  return new Promise((resolve) => resolve());
-}
-
 // Setting up the exports
 module.exports = {
-  PrintChartTable: printChartTable,
-  ChartTableToArray: chartTableToArray,
+  PrintChartTable: printTableArray,
+  TableToArray: tableToArray,
   GetTableRowPastIndex: getTableRowPastIndex,
+  ParseChartTableRow: parseChartTableRow,
   GetCharts: getCharts,
   ParseSongInfo: parseSongInfo,
-  GetSong: getSong,
   Songs: songs,
+  NoCommaInParenthesesRegex: noCommaInParenthesesRegex,
 };

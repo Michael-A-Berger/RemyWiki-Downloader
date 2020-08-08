@@ -40,6 +40,11 @@ function songTest(song) {
   let passedTest = true;
 
   // Error Checking - Basic Properties
+  if (song.remywiki === undefined) {
+    console.log('!!! - Song has no RemyWiki link! Full song details:');
+    console.dir(song);
+    passedTest = false;
+  }
   if (song.engname === undefined || typeof song.engname !== 'string') {
     console.log(`!!! - Song has no English Name! (${song.remywiki})`);
     passedTest = false;
@@ -69,10 +74,48 @@ function songTest(song) {
   return passedTest;
 }
 
+// iidxChartTest()
+function iidxChartTest(song, chartName) {
+  // Getting the chart to test
+  const chart = song.charts[chartName];
+
+  // Defining the result
+  let passedTest = true;
+
+  // Error Checking - Basic Properties
+  if (chart.rating === undefined) {
+    console.log(`!!! - Song chart [${chartName}] has no 'rating' property! [${song.remywiki}]`);
+    passedTest = false;
+  }
+  if (chart.notecounts === undefined) {
+    console.log(`!!! - Song chart [${chartName}] has no 'notecounts' property! [${song.remywiki}]`);
+    passedTest = false;
+  }
+
+  // Error Checking - Property Types
+  if (typeof chart.notecounts !== 'number') {
+    console.log(`!!! - Song chart [${chartName}] 'notecounts' property is not a number! [${song.remywiki}]`);
+    passedTest = false;
+  }
+  if (chart.chargenotes !== undefined && typeof chart.chargenotes !== 'number') {
+    console.log(`!!! - Song chart [${chartName}] 'chargenotes' property is not a number! [${song.remywiki}]`);
+    passedTest = false;
+  }
+  if (chart.backspinscratches !== undefined && typeof chart.backspinscratches !== 'number') {
+    console.log(`!!! - Song chart [${chartName}] 'backspinscratches' property is not a number! [${song.remywiki}]`);
+    passedTest = false;
+  }
+  if (!passedTest) console.dir(chart);
+
+  // Returning the result
+  return passedTest;
+}
+
 // iidxSongTest()
 function iidxSongTest(song) {
   // Defining the result
   let passedTest = songTest(song);
+  let chartTest = false;
 
   // Error Checking - Basic IIDX Properties
   if (song.genre === undefined) {
@@ -92,12 +135,21 @@ function iidxSongTest(song) {
     passedTest = false;
   }
 
-  // Error Checking - Chart Types
+  // Error Checking - Chart Amount
   const chartKeys = Object.keys(song.charts);
+  if (chartKeys.length === 0) {
+    console.log(`!!! - Song has no charts! (${song.remywiki})`);
+    passedTest = false;
+  }
+
+  // Error Checking - Individual Charts
   chartKeys.forEach((chart) => {
     if (iidxArcadeChartTypes.indexOf(chart) === -1) {
       console.log(`!!! - Song has unrecognized '${chart}' chart! (${song.remywiki})`);
       passedTest = false;
+    } else {
+      chartTest = iidxChartTest(song, chart);
+      passedTest = passedTest && chartTest;
     }
   });
 
