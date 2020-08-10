@@ -68,11 +68,50 @@ function tableToArray(tableObj) {
   return table2D;
 }
 
-// getTableRowPastIndex()
-function getTableRowPastIndex(chartTable, gameVersions, currentVersion, debug = false) {
-  // Getting the pre-check variables
-  const versionIndex = gameVersions.indexOf(currentVersion);
+// styleTextIsRelevant()
+function styleTextIsRelevant(version, styleText, debug = false) {
+  // Defining the result variable
+  let result = false;
 
+  // Getting the full series from the current version
+  const fullSeries = constants.GetSeries(version);
+
+  // Getting the two parts of the style text string
+  let startIndex = -1;
+  let endIndex = -1;
+  const styleArray = styleText.split('→');
+
+  // Determining if the style text strings correspond to game versions in the full series
+  startIndex = fullSeries.indexOf(styleArray[0]);
+  for (let num = 0; startIndex < 0 && num < fullSeries.length; num++) {
+    if (fullSeries[num].indexOf(styleArray[0]) > -1) {
+      startIndex = num;
+    }
+  }
+  if (styleArray.length > 1) {
+    if (styleArray[1].toLowerCase() === 'present') {
+      endIndex = fullSeries.length;
+    }
+    for (let styleNum = 0; endIndex === -1 && styleNum < fullSeries.length; styleNum++) {
+      if (fullSeries[styleNum].indexOf(styleArray[1]) > -1) endIndex = styleNum;
+    }
+  } else {
+    endIndex = startIndex;
+  }
+
+  // Determining whether the current version is within the style range
+  const currentIndex = fullSeries.indexOf(version);
+  if (startIndex !== -1 && currentIndex !== -1 && endIndex !== -1) {
+    result = (startIndex <= currentIndex && currentIndex <= endIndex);
+    if (debug) console.log(`\tstartIndex: ${startIndex}\n\tcurrentIndex: ${currentIndex}\n\tendIndex: ${endIndex}`);
+  }
+
+  // Returning the result
+  return result;
+}
+
+// getTableRowPastIndex()
+function getTableRowPastIndex(chartTable, currentVersion, debug = false) {
   // Defining the past index variable
   let pastIndex = -1;
 
@@ -83,52 +122,18 @@ function getTableRowPastIndex(chartTable, gameVersions, currentVersion, debug = 
     }
   }
 
-  // Looking for a PAST chart row match
-  let loopIndex = versionIndex - 1;
-  while (pastIndex < 0 && loopIndex > -1) {
-    // Getting the current version to check against
-    const oldVersion = gameVersions[loopIndex];
-
-    // FOR each row in the chart table... (going backwards)
-    for (let num = chartTable.length - 1; num > -1; num--) {
-      // IF the row has the game name + the extension character... (PAST MATCH FOUND)
-      const gameName = chartTable[num][0];
-      if (gameName.indexOf(`${oldVersion}→`) > -1) {
-        // Getting the text after the extension character...
-        const hangText = gameName.substr(gameName.indexOf('→') + 1);
-
-        // IF the hang text is to the present, then exit the loops early
-        if (hangText.toLowerCase() === 'present') {
-          pastIndex = num;
-          loopIndex = -1;
-          num = -1;
-        } else {
-          // ELSE... (actually searching for later game mixes)
-          for (let num2 = loopIndex + 1; num2 < gameVersions.length; num2++) {
-            // IF the hang text matches a newer version of the game...
-            if (gameVersions[num2].indexOf(hangText) > -1) {
-              // Debug Print
-              if (debug) {
-                console.log(`\n~~~~~~~~~~ PAST INDEX CURRENT ROW (#${num}) ~~~~~~~~~~\n`);
-                console.dir(chartTable[num]);
-                console.log('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
-              }
-
-              // Setting the PAST chart row index
-              pastIndex = num;
-
-              // Exiting the loops early
-              num2 = gameVersions.length;
-              loopIndex = -1;
-              num = -1;
-            }
-          }
-        }
+  // FOR each row of the table (going backwards)...
+  for (let rowNum = chartTable.length - 1; pastIndex === -1 && rowNum > -1; rowNum--) {
+    // IF the current row is relevant to the current game version, set the past index to the row number
+    if (styleTextIsRelevant(currentVersion, chartTable[rowNum][0], debug)) {
+      pastIndex = rowNum;
+      // Debug Print
+      if (debug) {
+        console.log(`\n~~~~~~~~~~ PAST INDEX CURRENT ROW (#${rowNum}) ~~~~~~~~~~\n`);
+        console.dir(chartTable[rowNum]);
+        console.log('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
       }
     }
-
-    // Decrementing the loop index
-    loopIndex--;
   }
 
   // Returning the past index
@@ -187,14 +192,11 @@ function getCharts(jqObj, version, debug = false) {
 
   // Deciding which chart header to get + Which game series versions array to use
   let chartHeaderID = '';
-  let seriesVersions = [];
   if (constants.DDRArcadeVersions.indexOf(version) > -1) {
     chartHeaderID = '#DanceDanceRevolution';
-    seriesVersions = constants.DDRArcadeVersions;
   }
   if (constants.IIDXArcadeVersions.indexOf(version) > -1) {
     chartHeaderID = '#beatmania_IIDX';
-    seriesVersions = constants.IIDXArcadeVersions;
   }
 
   // IF no designated chart header was found, throw an error
@@ -227,7 +229,7 @@ function getCharts(jqObj, version, debug = false) {
     }
 
     // Looking for a PAST chart row match
-    const pastIndex = getTableRowPastIndex(chartTable2D, seriesVersions, version, debug);
+    const pastIndex = getTableRowPastIndex(chartTable2D, version, debug);
 
     // Deciding which table row index to start getting the chart with
     if (exactIndex > -1) indexToUse = exactIndex;
@@ -252,10 +254,125 @@ function getCharts(jqObj, version, debug = false) {
   return charts;
 }
 
+// cleanUpSongInfo()
+function cleanUpSongInfo(songInfo, version, debug = false) {
+  // Defining the info copy object
+  const infoCopy = { ...songInfo };
+
+  // Defining the placeholder check passed value
+  let checkPassed = false;
+
+  // Undefined Parsing - Genre
+  if (infoCopy.genre === undefined) {
+    const genreKeys = Object.keys(infoCopy).filter((prop) => (prop.indexOf('genre') > -1));
+    let keyToUse = [];
+    // beatmania IIDX
+    if (constants.IIDXArcadeVersions.indexOf(version) > -1) {
+      keyToUse = genreKeys.filter((p) => p.indexOf('iidx'));
+      if (keyToUse.length === 1) infoCopy.genre = infoCopy[keyToUse[0]];
+    }
+    // IF no undefined parsing was done, say so
+    if (infoCopy.genre === undefined) {
+      console.log('ERROR IN PARSING: Song property \'genre\' was not found in special cases! SongInfo:');
+      console.dir(infoCopy);
+    }
+  }
+
+  // Array Parsing - BPM
+  if (Array.isArray(infoCopy.bpm)) {
+    checkPassed = false;
+    // beatmania IIDX
+    if (constants.IIDXArcadeVersions.indexOf(version) > -1) {
+      // Series Check
+      const keyToUse = infoCopy.bpm.filter((b) => b.toLowerCase().indexOf('iidx') > -1);
+      if (keyToUse.length === 1) {
+        infoCopy.bpm = keyToUse[0].replace(/\(.*\)/g, '');
+        checkPassed = true;
+      }
+      // Difficulty Check
+      const diffArray = ['beginner', 'normal', 'hyper', 'another', 'leggendaria'];
+      for (let num = 0; !checkPassed && num < infoCopy.bpm.length; num++) {
+        for (let diffNum = 0; !checkPassed && diffNum < diffArray.length; diffNum++) {
+          if (infoCopy.bpm[num].toLowerCase().indexOf(diffArray[diffNum]) > -1) {
+            infoCopy.bpm = infoCopy.bpm[num];
+            checkPassed = true;
+          }
+        }
+      }
+    }
+    // Style Check (NOTE: MUST BE LAST CHECK)
+    for (let num = 0; !checkPassed && num < infoCopy.bpm.length; num++) {
+      const styleHangText = infoCopy.bpm[num].match(/(?<=\().*?(?=\))/g)[0];
+      if (styleTextIsRelevant(version, styleHangText, debug)) {
+        infoCopy.bpm = infoCopy.bpm[num];
+        checkPassed = true;
+      }
+    }
+    // IF no BPM parsing was done, say so
+    if (!checkPassed) {
+      console.log('ERROR IN PARSING: Song property \'bpm\' is still an array despite special processing! SongInfo:');
+      console.dir(infoCopy);
+    } else {
+      // ELSE... (Removing the parentheses)
+      infoCopy.bpm = infoCopy.bpm.replace(/\(.*?\)/g, '').trim();
+    }
+  }
+
+  // Array Parsing - Length
+  if (Array.isArray(infoCopy.length)) {
+    checkPassed = false;
+    // (Generic "Game vs OST" Test)
+    for (let num = 0; num < infoCopy.length.length; num++) {
+      if (infoCopy.length[num].toLowerCase().indexOf('game') > -1) {
+        infoCopy.length = infoCopy.length[num];
+        checkPassed = true;
+      }
+    }
+    // beatmania IIDX
+    if (!checkPassed && constants.IIDXArcadeVersions.indexOf(version) > -1) {
+      // Series Check
+      const keyToUse = infoCopy.length.filter((l) => l.toLowerCase().indexOf('iidx') > -1);
+      if (keyToUse.length === 1) {
+        infoCopy.length = keyToUse[0].replace(/\(.*\)/g, '');
+        checkPassed = true;
+      }
+      // Difficulty Check
+      const diffArray = ['beginner', 'normal', 'hyper', 'another', 'leggendaria'];
+      for (let num = 0; !checkPassed && num < infoCopy.length.length; num++) {
+        for (let diffNum = 0; !checkPassed && diffNum < diffArray.length; diffNum++) {
+          if (infoCopy.length[num].toLowerCase().indexOf(diffArray[diffNum]) > -1) {
+            infoCopy.length = infoCopy.length[num];
+            checkPassed = true;
+          }
+        }
+      }
+    }
+    // Style Check (NOTE: MUST BE LAST CHECK)
+    for (let num = 0; !checkPassed && num < infoCopy.length.length; num++) {
+      const styleHangText = infoCopy.length[num].match(/(?<=\().*?(?=\))/g)[0];
+      if (styleTextIsRelevant(version, styleHangText, debug)) {
+        infoCopy.length = infoCopy.length[num];
+        checkPassed = true;
+      }
+    }
+    // IF no length parsing was done, say so
+    if (!checkPassed) {
+      console.log('ERROR IN PARSING: Song property \'length\' is still an array despite special processing! SongInfo:');
+      console.dir(infoCopy);
+    } else {
+      // ELSE... (Removing the parentheses)
+      infoCopy.length = infoCopy.length.replace(/\(.*?\)/g, '').trim();
+    }
+  }
+
+  // Returning the info copy
+  return infoCopy;
+}
+
 // parseSongInfo()
-function parseSongInfo(pElement, debug = false) {
+function parseSongInfo(pElement, version, debug = false) {
   // Defining the song info object
-  const songInfo = {};
+  let songInfo = {};
 
   // Parsing the song info from the paragraph
   const infoStrings = pElement.text().split('\n');
@@ -283,6 +400,10 @@ function parseSongInfo(pElement, debug = false) {
     }
   });
 
+  // Cleaning up the song info
+  songInfo = cleanUpSongInfo(songInfo, version, debug);
+
+  // Debug Print
   if (debug) {
     console.log('~~~~~~~~~~ SONG INFO ~~~~~~~~~~');
     console.dir(songInfo);
@@ -297,6 +418,7 @@ function parseSongInfo(pElement, debug = false) {
 module.exports = {
   PrintChartTable: printTableArray,
   TableToArray: tableToArray,
+  StyleTextIsRelevant: styleTextIsRelevant,
   GetTableRowPastIndex: getTableRowPastIndex,
   ParseChartTableRow: parseChartTableRow,
   GetCharts: getCharts,

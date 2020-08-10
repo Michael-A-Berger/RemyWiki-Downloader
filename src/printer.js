@@ -5,6 +5,14 @@ const fs = require('fs');
 const parser = require('./parser.js');
 const constants = require('./constants.js');
 
+// Defining the Comma Exception properties
+const commaExceptionProperties = [
+  'remywiki',
+  'engname',
+  'name',
+  'artist',
+];
+
 // Getting the newline by OS
 const newlineChar = (process.platform === 'win32' ? '\r\n' : '\n');
 
@@ -50,7 +58,7 @@ function iidxHeaders(version) {
   // Double Play Another
   headers.dpdifficultyanotherrating = 'DPA Rating';
   headers.dpdifficultyanothernotecounts = 'DPA Note Count';
-  
+
   // IF the version is 10th style or greater...
   if (constants.IIDXArcadeVersions.indexOf(version) >= 10) {
     // Single Play Beginner
@@ -153,7 +161,8 @@ function songsToShallowArray(songList, debug = false) {
     songProps.forEach((property) => {
       // Setting the property value to the shallow copy (works for arrays + strings)
       flatSong[property] = song[property].toString();
-      if (property !== 'remywiki') {
+      // if (property !== 'remywiki') {
+      if (commaExceptionProperties.indexOf(property) === -1) {
         flatSong[property] = flatSong[property].replace(parser.NoCommaInParenthesesRegex, ', ');
       }
     });

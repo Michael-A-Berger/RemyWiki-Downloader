@@ -49,23 +49,10 @@ async function getSong(url, linkText, version, debug = false) {
     // Getting the general song info
     let songInfo = loaded('#Song_Information').parent();
     songInfo = songInfo.nextAll('p').eq(0);
-    const parsedInfo = parser.ParseSongInfo(songInfo, debug);
+    const parsedInfo = parser.ParseSongInfo(songInfo, version, debug);
     Object.keys(parsedInfo).forEach((prop) => {
       song[prop] = parsedInfo[prop];
     });
-
-    // Making sure the 'genre' property is filled in
-    if (song.genre === undefined) {
-      const genreKeys = Object.keys(song).filter((prop) => (prop.indexOf('genre') > -1));
-      let keyToUse = '';
-      if (constants.IIDXArcadeVersions.indexOf(version) > -1) {
-        keyToUse = genreKeys.filter((p) => p.indexOf('iidx'))[0];
-        song.genre = song[keyToUse];
-      }
-      if (song.genre === undefined) {
-        console.log(`ERROR IN PARSING: Song property 'genre' was not found in special cases! (${url})`);
-      }
-    }
 
     // Getting the other game apearances
     song.othermusicgameappearances = [];
@@ -151,8 +138,8 @@ async function processFullSongListPage(url, version, debug = false) {
 // TEST TEST TEST
 // const errorSong = 'https://remywiki.com/Timepiece_phase_II';
 // const errorLinkText = 'Timepiece phase II (CN Ver.)';
-// const errorSong2 = 'https://remywiki.com/1989';
-// const errorLinkText2 = '1989';
+// const errorSong2 = 'https://remywiki.com/5.1.1.';
+// const errorLinkText2 = '5.1.1.';
 // const gameVersion = constants.IIDXArcadeVersions[6];
 // async function testFunc() {
 //   await getSong(errorSong2, errorLinkText2, gameVersion, true);

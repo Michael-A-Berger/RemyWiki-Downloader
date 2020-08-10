@@ -94,9 +94,36 @@ const popnArcadeVersions = [
   /* 24 */ 'pop\'n music peace',
 ];
 
+/* ==========================
+ * ===== HELPER METHODS =====
+ * ==========================
+ */
+
+// getSeries()
+function getSeries(version) {
+  // Defining the full series array
+  let fullSeries = [];
+
+  // Determining the full series
+  if (iidxArcadeVersions.indexOf(version) > -1) fullSeries = iidxArcadeVersions;
+  if (ddrArcadeVersions.indexOf(version) > -1) fullSeries = ddrArcadeVersions;
+  if (popnArcadeVersions.indexOf(version) > -1) fullSeries = popnArcadeVersions;
+
+  // IF the full series variable is not defined, print an error message
+  if (fullSeries.length === 0) {
+    console.log(`ERROR: Could not find parent game series for [${version}]!`);
+  }
+
+  // Returning the full series array
+  return fullSeries;
+}
+
 // Setting up the exports
 module.exports = {
+  // Game Versions
   DDRArcadeVersions: ddrArcadeVersions,
   IIDXArcadeVersions: iidxArcadeVersions,
   PopnArcadeVersions: popnArcadeVersions,
+  // Helper Methods
+  GetSeries: getSeries,
 };
