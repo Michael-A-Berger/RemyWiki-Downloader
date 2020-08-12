@@ -12,7 +12,7 @@ const specialCases = require('./special-cases.js');
 // getSong()
 async function getSong(url, linkText, version, debug = false) {
   // Creating the song object
-  const song = {};
+  let song = {};
   song.remywiki = url;
 
   // Debug Print
@@ -49,7 +49,7 @@ async function getSong(url, linkText, version, debug = false) {
     // Getting the general song info
     let songInfo = loaded('#Song_Information').parent();
     songInfo = songInfo.nextAll('p').eq(0);
-    const parsedInfo = parser.ParseSongInfo(songInfo, version, debug);
+    const parsedInfo = parser.ParseSongInfo(song, songInfo, version, debug);
     Object.keys(parsedInfo).forEach((prop) => {
       song[prop] = parsedInfo[prop];
     });
@@ -83,12 +83,12 @@ async function getSong(url, linkText, version, debug = false) {
   } else {
     // ELSE process the special case
     const specialSong = specialCases.ProcessSpecialCase(url, linkText, loaded, version, debug);
-    const specialKeys = Object.keys();
-    specialKeys.forEach((prop) => {
-      song[prop] = specialSong[prop];
-    });
-    // song = specialCases.ProcessSpecialCase(url, linkText, loaded, version, debug);
-    console.log(`- Special Case (${url}):`);
+    song = { ...specialSong };
+    // const specialKeys = Object.keys(specialSong);
+    // specialKeys.forEach((prop) => {
+    //   song[prop] = specialSong[prop];
+    // });
+    console.log(`- Special Case [${url}]:`);
     console.dir(song);
   }
 
@@ -102,7 +102,7 @@ async function getSong(url, linkText, version, debug = false) {
 // processFullSongListPage()
 async function processFullSongListPage(url, version, debug = false) {
   console.log(`- Processing [${url}]...`);
-  const pageScrapeWait = 120;
+  const pageScrapeWait = 150;
   // Parsing the song list page
   axios.get(url).then((response) => {
     // Loading the Cheerio JQuery object
@@ -127,7 +127,9 @@ async function processFullSongListPage(url, version, debug = false) {
 
     // TEST TEST TEST
     setTimeout(() => {
-      if (gameTests.FullGameTest(parser.Songs, version)) {
+      const testResult = gameTests.FullGameTest(parser.Songs, version);
+      if (testResult) {
+        console.log('Clean Scrape\n');
         printer.PrintCSV(parser.Songs, version, true);
       }
     }, (pageScrapeWait * listItems.length) + (1000 * Math.ceil(listItems.length / 100)));
@@ -138,9 +140,9 @@ async function processFullSongListPage(url, version, debug = false) {
 // TEST TEST TEST
 // const errorSong = 'https://remywiki.com/Timepiece_phase_II';
 // const errorLinkText = 'Timepiece phase II (CN Ver.)';
-// const errorSong2 = 'https://remywiki.com/5.1.1.';
-// const errorLinkText2 = '5.1.1.';
-// const gameVersion = constants.IIDXArcadeVersions[6];
+// const errorSong2 = 'https://remywiki.com/Eternal_Tears';
+// const errorLinkText2 = 'Eternal Tears';
+// const gameVersion = constants.IIDXArcadeVersions[26];
 // async function testFunc() {
 //   await getSong(errorSong2, errorLinkText2, gameVersion, true);
 //   gameTests.ShortTest(parser.Songs, gameVersion);
@@ -150,7 +152,7 @@ async function processFullSongListPage(url, version, debug = false) {
 // TEST TEST TEST
 
 // processFullSongListPage('https://remywiki.com/DDRMAX2_Full_Song_List', constants.DDRArcadeVersions[14]);
-processFullSongListPage('https://remywiki.com/Beatmania_IIDX_6th_style_AC_full_song_list', constants.IIDXArcadeVersions[6]);
+// processFullSongListPage('https://remywiki.com/Beatmania_IIDX_6th_style_AC_full_song_list', constants.IIDXArcadeVersions[6]);
 // processFullSongListPage('https://remywiki.com/Beatmania_IIDX_16_EMPRESS_AC_full_song_list', constants.IIDXArcadeVersions[16]);
-// processFullSongListPage('https://remywiki.com/Beatmania_IIDX_26_Rootage_Full_Songlist', constants.IIDXArcadeVersions[26]);
+processFullSongListPage('https://remywiki.com/Beatmania_IIDX_26_Rootage_Full_Songlist', constants.IIDXArcadeVersions[26]);
 // TEST TEST TEST

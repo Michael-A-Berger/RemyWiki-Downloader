@@ -65,6 +65,25 @@ const iidxArcadeVersions = [
   /* 27 */ 'beatmania IIDX 27 HEROIC VERSE',
 ];
 
+// IIDX Console Versions
+const iidxConsoleVersions = [
+  /* 00 */ 'beatmania IIDX 3rd style CS',
+  /* 01 */ 'beatmania IIDX 4th style CS',
+  /* 02 */ 'beatmania IIDX 5th style CS',
+  /* 03 */ 'beatmania IIDX 6th style CS',
+  /* 04 */ 'beatmania IIDX 7th style CS',
+  /* 05 */ 'beatmania IIDX 8th style CS',
+  /* 06 */ 'beatmania IIDX 9th style CS',
+  /* 07 */ 'beatmania IIDX 10th style CS',
+  /* 08 */ 'beatmania (2006)',
+  /* 09 */ 'beatmania IIDX 11 IIDX RED CS',
+  /* 10 */ 'beatmania IIDX 12 HAPPY SKY CS',
+  /* 11 */ 'beatmania IIDX 13 DistorteD CS',
+  /* 12 */ 'beatmania IIDX 14 GOLD CS',
+  /* 13 */ 'beatmania IIDX 15 DJ TROOPERS CS',
+  /* 14 */ 'beatmania IIDX 16 EMPRESS + PREMIUM BEST',
+];
+
 // Pop'n Music Arcade Versions
 const popnArcadeVersions = [
   /* 00 */ 'pop\'n music',

@@ -25,6 +25,9 @@ function iidxHeaders(version) {
   // Defining the headers array
   const headers = {};
 
+  // Getting the version index
+  const versionIndex = constants.IIDXArcadeVersions.indexOf(version);
+
   // Setting the basic song properties
   headers.name = 'Name';
   headers.engname = 'Transliteral Name';
@@ -35,39 +38,65 @@ function iidxHeaders(version) {
   headers.bpm = 'BPM';
   headers.length = 'Length';
 
-  // Single Play Normal
-  headers.spdifficultynormalrating = 'SPN Rating';
-  headers.spdifficultynormalnotecounts = 'SPN Note Count';
+  // 7KEYS
+  headers.spdifficultyhyperrating = '7KEYS Rating';
+  headers.spdifficultyhypernotecounts = '7KEYS Note Count';
+  headers.spdifficultyanotherrating = '7KEYS ANOTHER';
+  headers.spdifficultyanothernotecounts = '7KEYS ANOTHER Note Count';
 
-  // Single Play Hyper
-  headers.spdifficultyhyperrating = 'SPH Rating';
-  headers.spdifficultyhypernotecounts = 'SPH Note Count';
+  // 14KEYS
+  headers.dpdifficultyhyperrating = '14KEYS Rating';
+  headers.dpdifficultyhypernotecounts = '14KEYS Note Count';
+  headers.dpdifficultyanotherrating = '14KEYS ANOTHER';
+  headers.dpdifficultyanothernotecounts = '14KEYS ANOTHER Note Count';
 
-  // Single Play Another
-  headers.spdifficultyanotherrating = 'SPA Rating';
-  headers.spdifficultyanothernotecounts = 'SPA Note Count';
+  // IF the version is 3rd style or greater...
+  if (versionIndex >= 3) {
+    // LIGHT7
+    headers.spdifficultynormalrating = 'LIGHT7 Rating';
+    headers.spdifficultynormalnotecounts = 'LIGHT7 Note Count';
 
-  // Double Play Normal
-  headers.dpdifficultynormalrating = 'DPN Rating';
-  headers.dpdifficultynormalnotecounts = 'DPN Note Count';
-
-  // Double Play Hyper
-  headers.dpdifficultyhyperrating = 'DPH Rating';
-  headers.dpdifficultyhypernotecounts = 'DPH Note Count';
-
-  // Double Play Another
-  headers.dpdifficultyanotherrating = 'DPA Rating';
-  headers.dpdifficultyanothernotecounts = 'DPA Note Count';
+    // LIGHT14
+    headers.dpdifficultynormalrating = 'LIGHT14 Rating';
+    headers.dpdifficultynormalnotecounts = 'LIGHT14 Note Count';
+  }
 
   // IF the version is 10th style or greater...
-  if (constants.IIDXArcadeVersions.indexOf(version) >= 10) {
+  if (versionIndex >= 10) {
     // Single Play Beginner
     headers.spdifficultybeginnerrating = 'Beginner Rating';
     headers.spdifficultybeginnernotecounts = 'Beginner Note Count';
   }
 
+  // IF the version is 12 HAPPY SKY or greater...
+  if (versionIndex >= 12) {
+    // Single Play Normal
+    headers.spdifficultynormalrating = 'SPN Rating';
+    headers.spdifficultynormalnotecounts = 'SPN Note Count';
+
+    // Single Play Hyper
+    headers.spdifficultyhyperrating = 'SPH Rating';
+    headers.spdifficultyhypernotecounts = 'SPH Note Count';
+
+    // Single Play Another
+    headers.spdifficultyanotherrating = 'SPA Rating';
+    headers.spdifficultyanothernotecounts = 'SPA Note Count';
+
+    // Double Play Normal
+    headers.dpdifficultynormalrating = 'DPN Rating';
+    headers.dpdifficultynormalnotecounts = 'DPN Note Count';
+
+    // Double Play Hyper
+    headers.dpdifficultyhyperrating = 'DPH Rating';
+    headers.dpdifficultyhypernotecounts = 'DPH Note Count';
+
+    // Double Play Another
+    headers.dpdifficultyanotherrating = 'DPA Rating';
+    headers.dpdifficultyanothernotecounts = 'DPA Note Count';
+  }
+
   // IF the version is 17 SIRIUS or greater...
-  if (constants.IIDXArcadeVersions.indexOf(version) >= 17) {
+  if (versionIndex >= 17) {
     // Charge Notes
     headers.spdifficultybeginnerchargenotes = 'Beginner Charge Notes';
     headers.spdifficultynormalchargenotes = 'SPN Charge Notes';
@@ -88,7 +117,7 @@ function iidxHeaders(version) {
   }
 
   // IF the version is 21 SPADA or greater...
-  if (constants.IIDXArcadeVersions.indexOf(version) >= 21) {
+  if (versionIndex >= 21) {
     // Single Play Leggendaria
     headers.spdifficultyleggendariarating = 'SPL Rating';
     headers.spdifficultyleggendarianotecounts = 'SPL Note Count';
@@ -103,7 +132,7 @@ function iidxHeaders(version) {
   }
 
   // IF the version is 23 COPULA or greater...
-  if (constants.IIDXArcadeVersions.indexOf(version) >= 23) {
+  if (versionIndex >= 23) {
     // Hell Charge Notes
     headers.spdifficultybeginnerhellchargenotes = 'Beginner Hell Charge Notes';
     headers.spdifficultynormalhellchargenotes = 'SPN Hell Charge Notes';

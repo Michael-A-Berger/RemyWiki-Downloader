@@ -4,6 +4,10 @@ const constants = require('./constants.js');
 // Const Variables
 const songs = [];
 const noCommaInParenthesesRegex = /,\s*(?![^\[\(]*[\]\)])/g;
+const textInsideParenthesesRegex = /(?<=\().*?(?=\))/g;
+const textAndParenthesesRegex = /\(.*\)/g;
+
+const allowArrayParsing = false;
 
 // printTableArray()
 function printTableArray(table) {
@@ -155,7 +159,7 @@ function parseChartTableRow(chartTable2D, rowIndex) {
   // FOR each column past the first one...
   for (let col = 1; col < colCount; col++) {
     // IF the column in the row has a valid chart...
-    const chartRating = chartTable2D[rowIndex][col].replace(/[^\w/]/g, '');
+    const chartRating = chartTable2D[rowIndex][col].replace(/[^\w/\+]/g, '');
     if (chartRating.length > 0) {
       // Getting the chart name + stats
       const currentChart = {};
@@ -254,13 +258,65 @@ function getCharts(jqObj, version, debug = false) {
   return charts;
 }
 
+// cleanArrayToString()
+function cleanArrayToString(url, property, version, propArray, debug) {
+  // Defining the result + check passed variable
+  let result;
+  let checkPassed = false;
+
+  // beatmania IIDX Checks
+  if (!checkPassed && constants.IIDXArcadeVersions.indexOf(version) > -1) {
+    // Difficulty Check
+    const diffArray = ['beginner', 'normal', 'hyper', 'another', 'leggendaria'];
+    for (let num = 0; !checkPassed && num < propArray.length; num++) {
+      for (let diffNum = 0; !checkPassed && diffNum < diffArray.length; diffNum++) {
+        if (propArray[num].toLowerCase().indexOf(diffArray[diffNum]) > -1) {
+          result = propArray;
+          checkPassed = true;
+        }
+      }
+    }
+
+    // Series check
+    const keyToUse = propArray.filter((p) => (p.toLowerCase().indexOf('iidx') > -1));
+    if (!checkPassed && keyToUse.length === 1) {
+      const parenMatches = keyToUse[0].match(textAndParenthesesRegex);
+      if (parenMatches !== null && parenMatches.length > 0) {
+        result = keyToUse[0].replace(parenMatches[parenMatches.length - 1], '').trim();
+        checkPassed = true;
+      }
+    }
+  }
+
+  // Checking the Game Style
+  for (let num = 0; !checkPassed && num < propArray.length; num++) {
+    const parenMatches = propArray[num].match(textInsideParenthesesRegex);
+    if (parenMatches !== null) {
+      for (let parenNum = 0; !checkPassed && parenNum < parenMatches.length; parenNum++) {
+        const parenSplit = parenMatches[parenNum].split(/\s*,\s*/g);
+        for (let splitNum = 0; !checkPassed && splitNum.length; splitNum++) {
+          if (styleTextIsRelevant(version, parenSplit[splitNum], debug)) {
+            result = propArray[num].replace(parenMatches[parenNum], '').trim();
+            checkPassed = true;
+          }
+        }
+      }
+    }
+  }
+
+  // IF the check has not been passed, complain about it
+  if (!checkPassed) {
+    console.log(`ERROR IN PARSING: Song property '${property}' is still an array despite special processing! ${url}`);
+  }
+
+  // Returning the result
+  return result;
+}
+
 // cleanUpSongInfo()
 function cleanUpSongInfo(songInfo, version, debug = false) {
   // Defining the info copy object
   const infoCopy = { ...songInfo };
-
-  // Defining the placeholder check passed value
-  let checkPassed = false;
 
   // Undefined Parsing - Genre
   if (infoCopy.genre === undefined) {
@@ -268,100 +324,45 @@ function cleanUpSongInfo(songInfo, version, debug = false) {
     let keyToUse = [];
     // beatmania IIDX
     if (constants.IIDXArcadeVersions.indexOf(version) > -1) {
-      keyToUse = genreKeys.filter((p) => p.indexOf('iidx'));
+      keyToUse = genreKeys.filter((p) => p.indexOf('iidx') > -1);
       if (keyToUse.length === 1) infoCopy.genre = infoCopy[keyToUse[0]];
     }
     // IF no undefined parsing was done, say so
     if (infoCopy.genre === undefined) {
-      console.log('ERROR IN PARSING: Song property \'genre\' was not found in special cases! SongInfo:');
-      console.dir(infoCopy);
+      console.log(`ERROR IN PARSING: Song property 'genre' was not found in special cases! (${infoCopy.remywiki})`);
     }
   }
 
-  // Array Parsing - BPM
-  if (Array.isArray(infoCopy.bpm)) {
-    checkPassed = false;
-    // beatmania IIDX
-    if (constants.IIDXArcadeVersions.indexOf(version) > -1) {
-      // Series Check
-      const keyToUse = infoCopy.bpm.filter((b) => b.toLowerCase().indexOf('iidx') > -1);
-      if (keyToUse.length === 1) {
-        infoCopy.bpm = keyToUse[0].replace(/\(.*\)/g, '');
-        checkPassed = true;
-      }
-      // Difficulty Check
-      const diffArray = ['beginner', 'normal', 'hyper', 'another', 'leggendaria'];
-      for (let num = 0; !checkPassed && num < infoCopy.bpm.length; num++) {
-        for (let diffNum = 0; !checkPassed && diffNum < diffArray.length; diffNum++) {
-          if (infoCopy.bpm[num].toLowerCase().indexOf(diffArray[diffNum]) > -1) {
-            infoCopy.bpm = infoCopy.bpm[num];
-            checkPassed = true;
-          }
-        }
-      }
+  // Undefined Parsing - VJ (just for IIDX)
+  if (infoCopy.vj === undefined && constants.IIDXArcadeVersions.indexOf(version) > -1) {
+    // IF the info has a movie property, use that
+    if (infoCopy.movie !== undefined) {
+      infoCopy.vj = infoCopy.movie;
     }
-    // Style Check (NOTE: MUST BE LAST CHECK)
-    for (let num = 0; !checkPassed && num < infoCopy.bpm.length; num++) {
-      const styleHangText = infoCopy.bpm[num].match(/(?<=\().*?(?=\))/g)[0];
-      if (styleTextIsRelevant(version, styleHangText, debug)) {
-        infoCopy.bpm = infoCopy.bpm[num];
-        checkPassed = true;
-      }
-    }
-    // IF no BPM parsing was done, say so
-    if (!checkPassed) {
-      console.log('ERROR IN PARSING: Song property \'bpm\' is still an array despite special processing! SongInfo:');
-      console.dir(infoCopy);
-    } else {
-      // ELSE... (Removing the parentheses)
-      infoCopy.bpm = infoCopy.bpm.replace(/\(.*?\)/g, '').trim();
+
+    // IF no undefined parsing was done, say so
+    if (infoCopy.vj === undefined) {
+      console.log(`ERROR IN PARSING: Song property 'vj' was not found in special cases! (${infoCopy.remywiki})`);
     }
   }
 
-  // Array Parsing - Length
-  if (Array.isArray(infoCopy.length)) {
-    checkPassed = false;
-    // (Generic "Game vs OST" Test)
-    for (let num = 0; num < infoCopy.length.length; num++) {
-      if (infoCopy.length[num].toLowerCase().indexOf('game') > -1) {
-        infoCopy.length = infoCopy.length[num];
-        checkPassed = true;
-      }
+  if (debug && allowArrayParsing) {
+    // Array Parsing - BPM
+    if (Array.isArray(infoCopy.bpm)) {
+      const result = cleanArrayToString(infoCopy.remywiki, 'bpm', version, infoCopy.bpm, debug);
+      if (result !== undefined) infoCopy.bpm = result;
     }
-    // beatmania IIDX
-    if (!checkPassed && constants.IIDXArcadeVersions.indexOf(version) > -1) {
-      // Series Check
-      const keyToUse = infoCopy.length.filter((l) => l.toLowerCase().indexOf('iidx') > -1);
-      if (keyToUse.length === 1) {
-        infoCopy.length = keyToUse[0].replace(/\(.*\)/g, '');
-        checkPassed = true;
-      }
-      // Difficulty Check
-      const diffArray = ['beginner', 'normal', 'hyper', 'another', 'leggendaria'];
-      for (let num = 0; !checkPassed && num < infoCopy.length.length; num++) {
-        for (let diffNum = 0; !checkPassed && diffNum < diffArray.length; diffNum++) {
-          if (infoCopy.length[num].toLowerCase().indexOf(diffArray[diffNum]) > -1) {
-            infoCopy.length = infoCopy.length[num];
-            checkPassed = true;
-          }
-        }
-      }
+
+    // Array Parsing - Length
+    if (Array.isArray(infoCopy.length)) {
+      const result = cleanArrayToString(infoCopy.remywiki, 'length', version, infoCopy.length, debug);
+      if (result !== undefined) infoCopy.length = result;
     }
-    // Style Check (NOTE: MUST BE LAST CHECK)
-    for (let num = 0; !checkPassed && num < infoCopy.length.length; num++) {
-      const styleHangText = infoCopy.length[num].match(/(?<=\().*?(?=\))/g)[0];
-      if (styleTextIsRelevant(version, styleHangText, debug)) {
-        infoCopy.length = infoCopy.length[num];
-        checkPassed = true;
-      }
-    }
-    // IF no length parsing was done, say so
-    if (!checkPassed) {
-      console.log('ERROR IN PARSING: Song property \'length\' is still an array despite special processing! SongInfo:');
-      console.dir(infoCopy);
-    } else {
-      // ELSE... (Removing the parentheses)
-      infoCopy.length = infoCopy.length.replace(/\(.*?\)/g, '').trim();
+
+    // Array Parsing - VJ
+    if (Array.isArray(infoCopy.vj)) {
+      const result = cleanArrayToString(infoCopy.remywiki, 'vj', version, infoCopy.vj, debug);
+      if (result !== undefined) infoCopy.vj = result;
     }
   }
 
@@ -370,9 +371,9 @@ function cleanUpSongInfo(songInfo, version, debug = false) {
 }
 
 // parseSongInfo()
-function parseSongInfo(pElement, version, debug = false) {
+function parseSongInfo(songObj, pElement, version, debug = false) {
   // Defining the song info object
-  let songInfo = {};
+  let songInfo = { ...songObj };
 
   // Parsing the song info from the paragraph
   const infoStrings = pElement.text().split('\n');
@@ -422,6 +423,8 @@ module.exports = {
   GetTableRowPastIndex: getTableRowPastIndex,
   ParseChartTableRow: parseChartTableRow,
   GetCharts: getCharts,
+  CleanArrayToString: cleanArrayToString,
+  CleanUpSongInfo: cleanUpSongInfo,
   ParseSongInfo: parseSongInfo,
   Songs: songs,
   NoCommaInParenthesesRegex: noCommaInParenthesesRegex,

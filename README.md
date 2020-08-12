@@ -8,17 +8,15 @@ A web scrapper for RemyWiki (BEMANI English wiki)
     - Probably need to update game testing method.
 - :heavy_check_mark: beatmania IIDX 6th style
     - Finds the song links on the full song list page, parses individual song pages, and prints the gathered data to a .CSV file.
-    - (The algorithm can be improved, but testng comes up clean and the resulting CSV is acceptablely coherent.)
 - :part_alternation_mark: beatmania IIDX 16 EMPRESS
     - Haven't tested CSV printing with current parsing algorithm.
-- :part_alternation_mark: beatmani IIDX 26 Rootage
-    - Game test fails, but not due to parsing errors ("Movie" property is set in lieu of "VJ" property).
-    - Haven't tested CSV printing with current parsing algorithm.
+- :heavy_check_mark: beatmani IIDX 26 Rootage
+    - Prints detail information about each song in the game (outside of the Scripted Connection variants)
 
 # TO DO
-- Add special case for parsing [Timepiece phase II](https://remywiki.com/Timepiece_phase_II) IIDX version (original & CN charts)
-    - Finish the special function in ` special-cases.js `
-- Add IIDX VJ exceptions list in ` game-tests.js `
-    - Mostly to acccount for the 50th Memorial Songs, which define "Movie" instead of "VJ"
-    - Either that or add another series-specific IF statement to make sure the property is filled out (see; genre double-check in ` getSong() ` of ` parser.js `)
+- Add special case for Scripted Connection variants
+    - Need to modify special case method to be able to return multiple songs.
+        - ...Or I might be able to push the modified songs onto the Songs array directly.
+- Work on parsing song information arrays to single strings
+    - Tried to do a lot of this, but it resulted in wonky results and too many errors. By defaul it's disabled.
 - Do more extensive DDR song list testing
